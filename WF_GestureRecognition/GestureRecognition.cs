@@ -20,9 +20,10 @@ namespace WF_GestureRecognition
     {
         public static Gesture GetGestureFromImage(Mat img)
         {
+            SkinDetector skinDetector = new SkinDetector();
             Gesture gesture = Gesture.None;
             //Get skin color sample
-
+            skinDetector.GetSkinMask(img);
             //Remove background
 
             //Remove faces

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Emgu.CV;
+using Emgu.CV.Cuda;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 
@@ -72,24 +73,30 @@ namespace WF_GestureRecognition
 
             if (!this.Calibrated)
             {
-                //skinMask = Mat::zeros(input.size(), CV_8UC1);
                 skinMask = Mat.Zeros(input.Height, input.Width, DepthType.Cv8U, 3);
                 return skinMask;
             }
 
-            /*Mat hsvInput;
-            cvtColor(input, hsvInput, CV_BGR2HSV);
+            skinMask = null;
+            Mat hsvInput = new Mat();
+            CvInvoke.CvtColor(input, hsvInput, ColorConversion.Bgr2Hsv);
 
-            inRange(
+            CvInvoke.InRange(
                 hsvInput,
-                Scalar(hLowThreshold, sLowThreshold, vLowThreshold),
-                Scalar(hHighThreshold, sHighThreshold, vHighThreshold),
+                new ScalarArray(new MCvScalar(hLowThreshold, sLowThreshold, vLowThreshold)),
+                new ScalarArray(new MCvScalar(hHighThreshold, sHighThreshold, vHighThreshold)),
                 skinMask);
 
-            performOpening(skinMask, MORPH_ELLIPSE, { 3, 3 });
-            dilate(skinMask, skinMask, Mat(), Point(-1, -1), 3);*/
+            performOpening(skinMask, ElementShape.Ellipse, new Size(3, 3));
+            CvInvoke.Dilate(skinMask, skinMask, new Mat(), new Point(1, 1), 3, BorderType.Default, new MCvScalar());
 
             return skinMask;
+        }
+        private void performOpening(Mat binaryImage, ElementShape kernelShape, Size kernelSize)
+        {
+           Mat structuringElement = CvInvoke.GetStructuringElement(kernelShape, kernelSize, new Point(0,0));
+
+            CvInvoke.MorphologyEx(binaryImage, binaryImage, MorphOp.Open, structuringElement, new Point(0,0), 3, BorderType.Default, new MCvScalar());
         }
     }
 }
