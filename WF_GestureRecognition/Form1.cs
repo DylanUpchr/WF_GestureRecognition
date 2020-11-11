@@ -18,10 +18,12 @@ namespace WF_GestureRecognition
     {
         public Mat ImageMat { get; set; }
         private SkinDetector SkinDetector { get; set; }
+        private FingerCounter FingerCounter { get; set; }
         public Form1()
         {
             InitializeComponent();
             this.SkinDetector = new SkinDetector();
+            this.FingerCounter = new FingerCounter();
         }
 
         private void btnLoad_Click(object sender, EventArgs e)
@@ -63,8 +65,8 @@ namespace WF_GestureRecognition
             if (this.ImageMat != null)
             {
                 Rectangle sampleArea1, sampleArea2;
-                sampleArea1 = new Rectangle(this.ImageMat.Width / 6, this.ImageMat.Height / 2, 50, 50);
-                sampleArea2 = new Rectangle(this.ImageMat.Width / 3, this.ImageMat.Height / 2, 50, 50);
+                sampleArea1 = new Rectangle(this.ImageMat.Width / 2, this.ImageMat.Height / 2, 150, 150);
+                sampleArea2 = new Rectangle(this.ImageMat.Width / 2, this.ImageMat.Height / 3, 150, 150);
                 this.ImageMat = SkinDetector.DrawSkinColorSampler(this.ImageMat, sampleArea1, sampleArea2);
                 pbxImage.Image = this.ImageMat.ToBitmap();
             }
@@ -78,6 +80,9 @@ namespace WF_GestureRecognition
                 sampleArea1 = new Rectangle(this.ImageMat.Width / 6, this.ImageMat.Height / 2, 50, 50);
                 sampleArea2 = new Rectangle(this.ImageMat.Width / 3, this.ImageMat.Height / 2, 50, 50);
                 this.SkinDetector.Calibrate(this.ImageMat, sampleArea1, sampleArea2);
+                Mat skinMask = this.SkinDetector.GetSkinMask(this.ImageMat);
+                this.ImageMat = FingerCounter.FindFingersCount(skinMask, this.ImageMat);
+                this.pbxImage.Image = this.ImageMat.ToBitmap();
             }
         }
     }

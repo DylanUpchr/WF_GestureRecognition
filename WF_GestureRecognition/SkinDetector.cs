@@ -43,7 +43,7 @@ namespace WF_GestureRecognition
         public void Calibrate(Mat input, Rectangle r1, Rectangle r2)
         {
             Mat sample1, sample2, hsvImage = new Mat();
-            CvInvoke.CvtColor(input, hsvImage, ColorConversion.Rgb2Hsv);
+            CvInvoke.CvtColor(input, hsvImage, ColorConversion.Bgr2Hsv);
             sample1 = new Mat(hsvImage, r1);
             sample2 = new Mat(hsvImage, r2);
             CalculateThresholds(sample1, sample2);
@@ -70,16 +70,15 @@ namespace WF_GestureRecognition
         public Mat GetSkinMask(Mat input)
         {
             Mat skinMask;
+            skinMask = Mat.Zeros(input.Height, input.Width, DepthType.Cv8U, 3);
 
             if (!this.Calibrated)
             {
-                skinMask = Mat.Zeros(input.Height, input.Width, DepthType.Cv8U, 3);
                 return skinMask;
             }
 
-            skinMask = null;
             Mat hsvInput = new Mat();
-            CvInvoke.CvtColor(input, hsvInput, ColorConversion.Bgr2Hsv);
+            CvInvoke.CvtColor(input, hsvInput, ColorConversion.Rgb2Hsv);
 
             CvInvoke.InRange(
                 hsvInput,
@@ -87,8 +86,8 @@ namespace WF_GestureRecognition
                 new ScalarArray(new MCvScalar(hHighThreshold, sHighThreshold, vHighThreshold)),
                 skinMask);
 
-            performOpening(skinMask, ElementShape.Ellipse, new Size(3, 3));
-            CvInvoke.Dilate(skinMask, skinMask, new Mat(), new Point(1, 1), 3, BorderType.Default, new MCvScalar());
+            performOpening(skinMask, ElementShape.Ellipse, new Size(1, 1));
+            CvInvoke.Dilate(skinMask, skinMask, new Mat(), new Point(1, 1), 5, BorderType.Default, new MCvScalar());
 
             return skinMask;
         }
