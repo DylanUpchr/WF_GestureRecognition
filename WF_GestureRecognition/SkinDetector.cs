@@ -87,8 +87,8 @@ namespace WF_GestureRecognition
                 skinMask);
 
             performOpening(skinMask, ElementShape.Ellipse, new Size(1, 1));
-            CvInvoke.Dilate(skinMask, skinMask, new Mat(), new Point(1, 1), 5, BorderType.Default, new MCvScalar());
-
+            CvInvoke.Dilate(skinMask, skinMask, new Mat(), new Point(0, 0), 6, BorderType.Default, new MCvScalar());
+            CvInvoke.BitwiseNot(skinMask, skinMask);
             return skinMask;
         }
         private void performOpening(Mat binaryImage, ElementShape kernelShape, Size kernelSize)

@@ -81,8 +81,9 @@ namespace WF_GestureRecognition
                 sampleArea2 = new Rectangle(this.ImageMat.Width / 3, this.ImageMat.Height / 2, 50, 50);
                 this.SkinDetector.Calibrate(this.ImageMat, sampleArea1, sampleArea2);
                 Mat skinMask = this.SkinDetector.GetSkinMask(this.ImageMat);
-                this.ImageMat = FingerCounter.FindFingersCount(skinMask, this.ImageMat);
-                this.pbxImage.Image = this.ImageMat.ToBitmap();
+                var newImage = FingerCounter.FindFingersCount(skinMask, this.ImageMat);
+                //var newImage = skinMask;
+                this.pbxImage.Image = newImage.ToBitmap();
             }
         }
     }
