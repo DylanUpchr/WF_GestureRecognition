@@ -14,7 +14,7 @@ namespace WF_GestureRecognition
 {
     class FingerCounter
     {
-        const float BOUNDING_RECT_FINGER_SIZE_SCALING = 0.3F;
+        const float BOUNDING_RECT_FINGER_SIZE_SCALING = 0.27F;
         const float BOUNDING_RECT_NEIGHBOR_DISTANCE_SCALING = 0.05F;
         const int LIMIT_ANGLE_SUP = 60;
         const int LIMIT_ANGLE_INF = 5;
@@ -60,9 +60,10 @@ namespace WF_GestureRecognition
 
             VectorOfPoint hullPoints = new VectorOfPoint();
             VectorOfInt hullInts = new VectorOfInt();
+            
 
             CvInvoke.ConvexHull(contours[biggestContourIndex], hullPoints, true);
-            CvInvoke.ConvexHull(contours[biggestContourIndex], hullInts, true);
+            CvInvoke.ConvexHull(contours[biggestContourIndex], hullInts, false);
 
             Mat defects = new Mat();
             if (hullInts.Size > 3)
@@ -80,13 +81,16 @@ namespace WF_GestureRecognition
             VectorOfPoint farPoints = new VectorOfPoint();
 
             int[,,] defectsData = (int[,,])defects.GetData();
-            for (int i = 0; i < defects.Size.Width * defects.Size.Height; i++)
+            for (int i = 0; i < defectsData.Length / 4; i++)
             {
                 Point startPoint = contours[biggestContourIndex][defectsData[i, 0, 0]];
+                if (!startPoints.ToArray().ToList().Any(p => Math.Abs(p.X - startPoint.X) < 30 && Math.Abs(p.Y - startPoint.Y) < 30))
+                {
+                    VectorOfPoint startPointVector = new VectorOfPoint(new Point[] { startPoint });
+                    startPoints.Push(startPointVector);
+                }
                 Point farPoint = contours[biggestContourIndex][defectsData[i, 0, 2]];
-                VectorOfPoint startPointVector = new VectorOfPoint(new Point[] { startPoint });
-                startPoints.Push(startPointVector);
-                if (findPointsDistance(farPoint, centerBoundingRectangle) > boundingRectangle.Height * BOUNDING_RECT_FINGER_SIZE_SCALING)
+                if (findPointsDistance(farPoint, centerBoundingRectangle) < boundingRectangle.Height * BOUNDING_RECT_FINGER_SIZE_SCALING)
                 {
                     VectorOfPoint farPointVector = new VectorOfPoint(new Point[] { farPoint });
                     farPoints.Push(farPointVector);
@@ -96,7 +100,7 @@ namespace WF_GestureRecognition
 
             VectorOfPoint filteredStartPoints = CompactOnNeighborhoodMedian(startPoints, boundingRectangle.Height * BOUNDING_RECT_NEIGHBOR_DISTANCE_SCALING);
             VectorOfPoint filteredFarPoints = CompactOnNeighborhoodMedian(farPoints, boundingRectangle.Height * BOUNDING_RECT_NEIGHBOR_DISTANCE_SCALING);
-
+            
             VectorOfPoint filteredFingerPoints = new VectorOfPoint();
             if (filteredFarPoints.Size > 1)
             {
@@ -106,7 +110,7 @@ namespace WF_GestureRecognition
                 {
                     VectorOfPoint closestPoints = findClosestOnX(filteredFarPoints, filteredStartPoints[i]);
 
-                    if (isFinger(closestPoints[0], filteredStartPoints[i], closestPoints[i], LIMIT_ANGLE_INF, LIMIT_ANGLE_SUP, centerBoundingRectangle, boundingRectangle.Height * BOUNDING_RECT_FINGER_SIZE_SCALING))
+                    if (isFinger(closestPoints[0], filteredStartPoints[i], closestPoints[1], LIMIT_ANGLE_INF, LIMIT_ANGLE_SUP, centerBoundingRectangle, boundingRectangle.Height * BOUNDING_RECT_FINGER_SIZE_SCALING))
                     {
                         fingerPoints.Push(new Point[] { filteredStartPoints[i] });
                     }
@@ -125,22 +129,38 @@ namespace WF_GestureRecognition
                     {
 
                     }
+                    filteredFingerPoints = fingerPoints;
                 }
             }
 
-            Rgb colorRed = new Rgb(Color.Red);
-            Rgb colorGreen = new Rgb(Color.Green);
-            Rgb colorBlue = new Rgb(Color.Blue);
-            Rgb colorPurple = new Rgb(Color.Purple);
-            Rgb colorWhite = new Rgb(Color.White);
-            CvInvoke.DrawContours(contoursImage, contours, 0, colorRed.MCvScalar, DRAW_THICKNESS, LineType.AntiAlias);
+            Bgr colorRed = new Bgr(Color.Red);
+            Bgr colorGreen = new Bgr(Color.Green);
+            Bgr colorBlue = new Bgr(Color.Blue);
+            Bgr colorYellow= new Bgr(Color.Yellow);
+            Bgr colorPurple = new Bgr(Color.Purple);
+            Bgr colorWhite = new Bgr(Color.White);
+            CvInvoke.DrawContours(contoursImage, contours, 0, colorGreen.MCvScalar, DRAW_THICKNESS, LineType.AntiAlias);
             CvInvoke.Polylines(contoursImage, hullPoints, true, colorBlue.MCvScalar, DRAW_THICKNESS);
-            CvInvoke.Rectangle(contoursImage, boundingRectangle, colorBlue.MCvScalar, DRAW_THICKNESS);
-            CvInvoke.Circle(contoursImage, centerBoundingRectangle, 5, colorRed.MCvScalar, DRAW_THICKNESS);
-            drawVectorPoints(contoursImage, filteredStartPoints, colorGreen.MCvScalar, true, DRAW_THICKNESS);
-            drawVectorPoints(contoursImage, filteredFarPoints, colorWhite.MCvScalar, true, DRAW_THICKNESS);
-            drawVectorPoints(contoursImage, filteredFingerPoints, colorPurple.MCvScalar, false, DRAW_THICKNESS);
-            CvInvoke.PutText(contoursImage, filteredFingerPoints.Size.ToString(), centerBoundingRectangle, FontFace.HersheyComplex, 3, colorPurple.MCvScalar);
+            CvInvoke.Rectangle(contoursImage, boundingRectangle, colorRed.MCvScalar, DRAW_THICKNESS);
+            CvInvoke.Circle(contoursImage, centerBoundingRectangle, 5, colorYellow.MCvScalar, DRAW_THICKNESS);
+            drawVectorPoints(contoursImage, filteredStartPoints, colorRed.MCvScalar, true, 3);
+            drawVectorPoints(contoursImage, filteredFarPoints, colorWhite.MCvScalar, true, 3);
+            drawVectorPoints(contoursImage, filteredFingerPoints, colorYellow.MCvScalar, false, 3);
+            CvInvoke.PutText(contoursImage, filteredFingerPoints.Size.ToString(), centerBoundingRectangle, FontFace.HersheyComplex, 2, colorYellow.MCvScalar);
+
+            //Debug, draw defects
+            /*defectsData = (int[,,])defects.GetData();
+            for (int i = 0; i < defectsData.Length / 4; i++)
+            {
+                Point start = contours[biggestContourIndex][defectsData[i, 0, 0]];
+                Point far = contours[biggestContourIndex][defectsData[i, 0, 2]];
+                Point end = contours[biggestContourIndex][defectsData[i, 0, 1]];
+
+                CvInvoke.Polylines(contoursImage, new Point[] { start, far, end }, true, colorPurple.MCvScalar);
+                CvInvoke.Circle(contoursImage, start, 5, colorYellow.MCvScalar);
+                CvInvoke.Circle(contoursImage, far, 5, colorRed.MCvScalar, 10);
+                CvInvoke.Circle(contoursImage, end, 5, colorPurple.MCvScalar);
+            }*/
 
             return contoursImage;
         }
@@ -177,7 +197,7 @@ namespace WF_GestureRecognition
         }
         private VectorOfPoint findClosestOnX(VectorOfPoint points, Point pivot)
         {
-            VectorOfPoint result = new VectorOfPoint(2);
+            VectorOfPoint result = new VectorOfPoint();
 
             if (points.Size == 0)
             {
@@ -209,7 +229,7 @@ namespace WF_GestureRecognition
                 double distanceX = findPointsDistanceOnX(pivot, points[i]);
                 double distance = findPointsDistance(pivot, points[i]);
 
-                if (distanceX < distanceX2 && distanceX != 0 && distance <= distance2)
+                if (distanceX < distanceX2 && distanceX != 0 && distance <= distance2 && distanceX != distanceX1)
                 {
                     distanceX2 = distanceX;
                     distance2 = distance;
@@ -263,7 +283,7 @@ namespace WF_GestureRecognition
                 CvInvoke.Circle(image, points[i], 5, color, thickness);
                 if (withNumbers)
                 {
-                    CvInvoke.PutText(image, i.ToString(), points[i], FontFace.HersheyComplex , 3, color, thickness);
+                    CvInvoke.PutText(image, i.ToString(), points[i], FontFace.HersheyComplex , 2, color, thickness);
                 }
             }
         }
@@ -281,8 +301,10 @@ namespace WF_GestureRecognition
         }
         private double findPointsDistance(Point a, Point b)
         {
-            Point diff = new Point(Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
-            return Math.Sqrt((double)diff.X * (double)diff.Y);
+            var xDiff = Math.Abs(a.X - b.X);
+            var yDiff = Math.Abs(a.Y - b.Y);
+
+            return Math.Sqrt(Math.Pow(xDiff, 2) + Math.Pow(yDiff, 2));
         }
         private double findAngle(Point a, Point b, Point c)
         {
