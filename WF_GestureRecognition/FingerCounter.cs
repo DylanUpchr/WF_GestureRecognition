@@ -18,6 +18,7 @@ namespace WF_GestureRecognition
         const float BOUNDING_RECT_NEIGHBOR_DISTANCE_SCALING = 0.05F;
         const int LIMIT_ANGLE_SUP = 60;
         const int LIMIT_ANGLE_INF = 5;
+        public int NumberOfFingersRaised { get; private set; }
         const int DRAW_THICKNESS = 5;
         public FingerCounter()
         {
@@ -130,6 +131,7 @@ namespace WF_GestureRecognition
 
                     }
                     filteredFingerPoints = fingerPoints;
+                    this.NumberOfFingersRaised = filteredFingerPoints.Size;
                 }
             }
 

@@ -18,22 +18,40 @@ namespace WF_GestureRecognition
     }
     static class GestureRecognition
     {
-        public static Gesture GetGestureFromImage(Mat img)
+        public static Mat GetGestureFromImage(Mat img, Rectangle sampleArea1, Rectangle sampleArea2)
         {
             SkinDetector skinDetector = new SkinDetector();
+            FingerCounter fingerCounter = new FingerCounter();
             Gesture gesture = Gesture.None;
-            //Get skin color sample
-            skinDetector.GetSkinMask(img);
-            //Remove background
 
-            //Remove faces
-
-            //Get hand
-
-            //Detect gesture
-
-            //Return gesture
-            return gesture;
+            if (img != null)
+            {
+                skinDetector.Calibrate(img, sampleArea1, sampleArea2);
+                Mat skinMask = skinDetector.GetSkinMask(img);
+                var newImage = fingerCounter.FindFingersCount(skinMask, img);
+                img = newImage;
+                switch (fingerCounter.NumberOfFingersRaised)
+                {
+                    case 0:
+                        break;
+                    case 1:
+                        break;
+                    case 2:
+                        break;
+                    case 3:
+                        break;
+                    case 4:
+                        break;
+                    case 5:
+                        gesture = Gesture.OpenPalm;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            Console.WriteLine(gesture.ToString());
+            CvInvoke.PutText(img, gesture.ToString(), new Point(50, 50), FontFace.HersheyComplex, 1, new Bgr(255, 255, 255).MCvScalar, 3);
+            return img;
         }
     }
 }

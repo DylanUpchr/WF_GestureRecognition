@@ -64,8 +64,12 @@ namespace WF_GestureRecognition
             //img = imageCV.Mat; //This is your Image converted to Mat
             if (this.SkinDetector.Calibrated)
             {
-                Gesture g = GestureRecognition.GetGestureFromImage(this.ImageMat);
-                Console.WriteLine(g.ToString());
+                Rectangle sampleArea1, sampleArea2;
+                sampleArea1 = new Rectangle(this.pbxImage.Width / 2, this.pbxImage.Height / 2, 50, 50);
+                sampleArea2 = new Rectangle(this.pbxImage.Width / 3, this.pbxImage.Height / 2, 50, 50);
+                this.ImageMat = GestureRecognition.GetGestureFromImage(this.ImageMat, sampleArea1, sampleArea2); 
+                pbxImage.Image = this.ImageMat.ToBitmap();
+
             }
             else
             {
@@ -90,15 +94,9 @@ namespace WF_GestureRecognition
             if (this.ImageMat != null)
             {
                 Rectangle sampleArea1, sampleArea2;
-                /*sampleArea1 = new Rectangle(this.ImageMat.Width / 6, this.ImageMat.Height / 2, 50, 50);
-                sampleArea2 = new Rectangle(this.ImageMat.Width / 3, this.ImageMat.Height / 2, 50, 50);*/
                 sampleArea1 = new Rectangle(this.pbxImage.Width / 2, this.pbxImage.Height / 2, 50, 50);
                 sampleArea2 = new Rectangle(this.pbxImage.Width / 3, this.pbxImage.Height / 2, 50, 50);
                 this.SkinDetector.Calibrate(this.ImageMat, sampleArea1, sampleArea2);
-                Mat skinMask = this.SkinDetector.GetSkinMask(this.ImageMat);
-                var newImage = FingerCounter.FindFingersCount(skinMask, this.ImageMat);
-                //var newImage = skinMask;
-                this.pbxImage.Image = newImage.ToBitmap();
             }
         }
         private void LoadSample(object sender, EventArgs e)
@@ -131,10 +129,6 @@ namespace WF_GestureRecognition
 
             if (sample != null)
             {
-                /*ImageConverter imageConverter = new ImageConverter();
-                Image<Bgr, byte> image = new Image<Bgr, byte>(sample.Width, sample.Height);
-                image.Bytes = (byte[])imageConverter.ConvertTo(sample, typeof(byte[]));
-                this.ImageMat = image.Mat;*/
                 BitmapData bitmapData = sample.LockBits(new Rectangle(0, 0, sample.Width, sample.Height), ImageLockMode.ReadOnly, sample.PixelFormat);
 
                 Image<Bgr, byte> image = new Image<Bgr, byte>(bitmapData.Width, bitmapData.Height, bitmapData.Stride, bitmapData.Scan0);
