@@ -19,7 +19,7 @@ namespace WF_GestureRecognition
         private double sHighThreshold;
         private double vLowThreshold;
         private double vHighThreshold;
-        public bool Calibrated { get; private set; }
+        public bool Calibrated { get; set; }
         public SkinDetector()
         {
             this.Calibrated = false;
@@ -40,6 +40,12 @@ namespace WF_GestureRecognition
             CvInvoke.Rectangle(input, r2, new MCvScalar(0, 0, 255));
             return input;
         }
+        /// <summary>
+        /// Calculate value thresholds for skin detection from sample areas
+        /// </summary>
+        /// <param name="input">Input image</param>
+        /// <param name="r1">Sample area 1</param>
+        /// <param name="r2">Sample area 2</param>
         public void Calibrate(Mat input, Rectangle r1, Rectangle r2)
         {
             Mat sample1, sample2, hsvImage = new Mat();
@@ -49,6 +55,11 @@ namespace WF_GestureRecognition
             CalculateThresholds(sample1, sample2);
             this.Calibrated = true;
         }
+        /// <summary>
+        /// Calculate value thresholds for skin detection
+        /// </summary>
+        /// <param name="sample1"></param>
+        /// <param name="sample2"></param>
         private void CalculateThresholds(Mat sample1, Mat sample2)
         {
             int offsetLowThreshold = 80;
@@ -67,6 +78,11 @@ namespace WF_GestureRecognition
             vLowThreshold = Math.Min(hsvMeansSample1.V2, hsvMeansSample2.V2) - offsetLowThreshold;
             vHighThreshold = Math.Max(hsvMeansSample1.V2, hsvMeansSample2.V2) + offsetHighThreshold;
         }
+        /// <summary>
+        /// Return a mask for where skin is detected using thresholds from calibration
+        /// </summary>
+        /// <param name="input">Input image</param>
+        /// <returns></returns>
         public Mat GetSkinMask(Mat input)
         {
             Mat skinMask;
@@ -91,6 +107,12 @@ namespace WF_GestureRecognition
             CvInvoke.BitwiseNot(skinMask, skinMask);
             return skinMask;
         }
+        /// <summary>
+        /// Clean up mask
+        /// </summary>
+        /// <param name="binaryImage">Skin mask</param>
+        /// <param name="kernelShape">Shape of correction tool</param>
+        /// <param name="kernelSize">Size of correction tool</param>
         private void performOpening(Mat binaryImage, ElementShape kernelShape, Size kernelSize)
         {
            Mat structuringElement = CvInvoke.GetStructuringElement(kernelShape, kernelSize, new Point(0,0));

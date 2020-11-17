@@ -25,10 +25,10 @@ namespace WF_GestureRecognition
             InitializeComponent();
 
             ToolStripItem[] sampleImages = new ToolStripItem[] {
-                new ToolStripMenuItem("Closed Hand", null, new EventHandler(LoadSample)),
+                /*new ToolStripMenuItem("Closed Hand", null, new EventHandler(LoadSample)), //Non-Functional samples
                 new ToolStripMenuItem("1 Finger", null, new EventHandler(LoadSample)),
                 new ToolStripMenuItem("2 Fingers", null, new EventHandler(LoadSample)),
-                new ToolStripMenuItem("3 Fingers", null, new EventHandler(LoadSample)),
+                new ToolStripMenuItem("3 Fingers", null, new EventHandler(LoadSample)),*/
                 new ToolStripMenuItem("4 Fingers", null, new EventHandler(LoadSample)),
                 new ToolStripMenuItem("Open Hand", null, new EventHandler(LoadSample)),
             };
@@ -37,7 +37,11 @@ namespace WF_GestureRecognition
             this.SkinDetector = new SkinDetector();
             this.FingerCounter = new FingerCounter();
         }
-
+        /// <summary>
+        /// Load image from file
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btnLoad_Click(object sender, EventArgs e)
         {
             var filePath = string.Empty;
@@ -57,66 +61,58 @@ namespace WF_GestureRecognition
                 }
             }
         }
-
+        /// <summary>
+        /// Detect gesture from loaded image after calibration
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btnDetect_Click(object sender, EventArgs e)
         {
-            //Image<Bgr, byte> imageCV = new Image<Bgr, byte>(bmp); //Image Class from Emgu.CV
-            //img = imageCV.Mat; //This is your Image converted to Mat
-            if (this.SkinDetector.Calibrated)
-            {
-                Rectangle sampleArea1, sampleArea2;
-                sampleArea1 = new Rectangle(this.pbxImage.Width / 2, this.pbxImage.Height / 2, 50, 50);
-                sampleArea2 = new Rectangle(this.pbxImage.Width / 3, this.pbxImage.Height / 2, 50, 50);
-                this.ImageMat = GestureRecognition.GetGestureFromImage(this.ImageMat, sampleArea1, sampleArea2); 
-                pbxImage.Image = this.ImageMat.ToBitmap();
-
-            }
-            else
-            {
-                Console.WriteLine("Skin detector not calibrated");
-            }
+            Rectangle sampleArea1, sampleArea2;
+            sampleArea1 = new Rectangle(this.pbxImage.Image.Width / 2, this.pbxImage.Image.Height / 2, 50, 50);
+            sampleArea2 = new Rectangle(this.pbxImage.Image.Width / 2, this.pbxImage.Image.Height / 3, 50, 50);
+            this.ImageMat = GestureRecognition.GetGestureFromImage(this.ImageMat, sampleArea1, sampleArea2);
+            pbxImage.Image = this.ImageMat.ToBitmap();
         }
-
+        /// <summary>
+        /// Show calibration area
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void btnShowSampleArea_Click(object sender, EventArgs e)
         {
             if (this.ImageMat != null)
             {
                 Rectangle sampleArea1, sampleArea2;
-                sampleArea1 = new Rectangle(this.pbxImage.Width / 2, this.pbxImage.Height / 2, 50, 50);
-                sampleArea2 = new Rectangle(this.pbxImage.Width / 3, this.pbxImage.Height / 2, 50, 50);
+                sampleArea1 = new Rectangle(this.pbxImage.Image.Width / 2, this.pbxImage.Image.Height / 2, 50, 50);
+                sampleArea2 = new Rectangle(this.pbxImage.Image.Width / 2, this.pbxImage.Image.Height / 3, 50, 50);
                 this.ImageMat = SkinDetector.DrawSkinColorSampler(this.ImageMat, sampleArea1, sampleArea2);
                 pbxImage.Image = this.ImageMat.ToBitmap();
             }
         }
-
-        private void btnSample_Click(object sender, EventArgs e)
-        {
-            if (this.ImageMat != null)
-            {
-                Rectangle sampleArea1, sampleArea2;
-                sampleArea1 = new Rectangle(this.pbxImage.Width / 2, this.pbxImage.Height / 2, 50, 50);
-                sampleArea2 = new Rectangle(this.pbxImage.Width / 3, this.pbxImage.Height / 2, 50, 50);
-                this.SkinDetector.Calibrate(this.ImageMat, sampleArea1, sampleArea2);
-            }
-        }
+        /// <summary>
+        /// Load sample image from resources
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void LoadSample(object sender, EventArgs e)
         {
             Bitmap sample = null;
             ToolStripMenuItem toolStripMenuItem = sender as ToolStripMenuItem;
             switch (toolStripMenuItem.Text)
             {
-                case "Closed Hand":
+                /*case "Closed Hand":                           //Non-Functional samples
                     sample = Properties.Resources.hand_closed;
                     break;
-                case "1 Finger":
-                    sample = Properties.Resources._1_finger;
-                    break;
-                case "2 Fingers":
-                    sample = Properties.Resources._2_fingers;
-                    break;
-                case "3 Fingers":
-                    sample = Properties.Resources._3_fingers;
-                    break;
+                 case "1 Finger":
+                     sample = Properties.Resources._1_finger;
+                     break;
+                 case "2 Fingers":
+                     sample = Properties.Resources._2_fingers;
+                     break;
+                 case "3 Fingers":
+                     sample = Properties.Resources._3_fingers;
+                     break;*/
                 case "4 Fingers":
                     sample = Properties.Resources._4_fingers;
                     break;
@@ -129,9 +125,12 @@ namespace WF_GestureRecognition
 
             if (sample != null)
             {
+                //Create OpenCV Mat from bitmap byte array
                 BitmapData bitmapData = sample.LockBits(new Rectangle(0, 0, sample.Width, sample.Height), ImageLockMode.ReadOnly, sample.PixelFormat);
 
                 Image<Bgr, byte> image = new Image<Bgr, byte>(bitmapData.Width, bitmapData.Height, bitmapData.Stride, bitmapData.Scan0);
+                /*this.SkinDetector.Calibrated = false;
+                this.btnDetect.Enabled = false;*/
                 this.ImageMat = image.Mat;
                 this.pbxImage.Image = (Bitmap)sample;
                 sample.UnlockBits(bitmapData);

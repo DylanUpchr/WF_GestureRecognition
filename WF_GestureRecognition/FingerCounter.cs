@@ -24,18 +24,23 @@ namespace WF_GestureRecognition
         {
 
         }
-        public Mat FindFingersCount(Mat inputImage, Mat frame)
+        /// <summary>
+        /// Count number of fingers on skinMask and draw debug information
+        /// </summary>
+        /// <param name="skinMask">Skin mask to count fingers on</param>
+        /// <returns>Mat with detection debug information</returns>
+        public Mat FindFingersCount(Mat skinMask)
         {
-            Mat contoursImage = Mat.Ones(inputImage.Height, inputImage.Width, DepthType.Cv8U, 3);
+            Mat contoursImage = Mat.Ones(skinMask.Height, skinMask.Width, DepthType.Cv8U, 3);
 
-            if (inputImage.IsEmpty || inputImage.NumberOfChannels != 1)
+            if (skinMask.IsEmpty || skinMask.NumberOfChannels != 1)
             {
                 return contoursImage;
             }
 
             VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
             Mat hierarchy = new Mat();
-            CvInvoke.FindContours(inputImage, contours, hierarchy, RetrType.External, ChainApproxMethod.ChainApproxNone);
+            CvInvoke.FindContours(skinMask, contours, hierarchy, RetrType.External, ChainApproxMethod.ChainApproxNone);
 
             if (contours.Size <= 0)
             {
@@ -141,6 +146,22 @@ namespace WF_GestureRecognition
             Bgr colorYellow= new Bgr(Color.Yellow);
             Bgr colorPurple = new Bgr(Color.Purple);
             Bgr colorWhite = new Bgr(Color.White);
+
+            //Debug, draw defects
+            defectsData = (int[,,])defects.GetData();
+            for (int i = 0; i < defectsData.Length / 4; i++)
+            {
+                Point start = contours[biggestContourIndex][defectsData[i, 0, 0]];
+                Point far = contours[biggestContourIndex][defectsData[i, 0, 2]];
+                Point end = contours[biggestContourIndex][defectsData[i, 0, 1]];
+
+                CvInvoke.Polylines(contoursImage, new Point[] { start, far, end }, true, colorPurple.MCvScalar, DRAW_THICKNESS / 2);
+                CvInvoke.Circle(contoursImage, start, 5, colorWhite.MCvScalar);
+                CvInvoke.Circle(contoursImage, far, 5, colorRed.MCvScalar, 10);
+                CvInvoke.Circle(contoursImage, end, 5, colorBlue.MCvScalar);
+            }
+
+            //Draw information about what was detected (Contours, key points, fingers / how many fingers)
             CvInvoke.DrawContours(contoursImage, contours, 0, colorGreen.MCvScalar, DRAW_THICKNESS, LineType.AntiAlias);
             CvInvoke.Polylines(contoursImage, hullPoints, true, colorBlue.MCvScalar, DRAW_THICKNESS);
             CvInvoke.Rectangle(contoursImage, boundingRectangle, colorRed.MCvScalar, DRAW_THICKNESS);
@@ -150,22 +171,15 @@ namespace WF_GestureRecognition
             drawVectorPoints(contoursImage, filteredFingerPoints, colorYellow.MCvScalar, false, 3);
             CvInvoke.PutText(contoursImage, filteredFingerPoints.Size.ToString(), centerBoundingRectangle, FontFace.HersheyComplex, 2, colorYellow.MCvScalar);
 
-            //Debug, draw defects
-            /*defectsData = (int[,,])defects.GetData();
-            for (int i = 0; i < defectsData.Length / 4; i++)
-            {
-                Point start = contours[biggestContourIndex][defectsData[i, 0, 0]];
-                Point far = contours[biggestContourIndex][defectsData[i, 0, 2]];
-                Point end = contours[biggestContourIndex][defectsData[i, 0, 1]];
-
-                CvInvoke.Polylines(contoursImage, new Point[] { start, far, end }, true, colorPurple.MCvScalar);
-                CvInvoke.Circle(contoursImage, start, 5, colorYellow.MCvScalar);
-                CvInvoke.Circle(contoursImage, far, 5, colorRed.MCvScalar, 10);
-                CvInvoke.Circle(contoursImage, end, 5, colorPurple.MCvScalar);
-            }*/
 
             return contoursImage;
         }
+        /// <summary>
+        /// Filter points based on neighbor distance
+        /// </summary>
+        /// <param name="points">Point vector</param>
+        /// <param name="maxNeighborDistance">Max distance from nearest neighbor</param>
+        /// <returns>Filtered point vector</returns>
         private VectorOfPoint CompactOnNeighborhoodMedian(VectorOfPoint points, double maxNeighborDistance)
         {
             VectorOfPoint medianPoints = new VectorOfPoint();
@@ -197,6 +211,12 @@ namespace WF_GestureRecognition
             medianPoints.Push(new Point[] { median });
             return medianPoints;
         }
+        /// <summary>
+        /// Find point with closest X value
+        /// </summary>
+        /// <param name="points">Points vector</param>
+        /// <param name="pivot">Reference point</param>
+        /// <returns></returns>
         private VectorOfPoint findClosestOnX(VectorOfPoint points, Point pivot)
         {
             VectorOfPoint result = new VectorOfPoint();
@@ -242,6 +262,17 @@ namespace WF_GestureRecognition
 
             return result;
         }
+        /// <summary>
+        /// Check if 3-point cloud is a finger or not
+        /// </summary>
+        /// <param name="a">1st finger start point</param>
+        /// <param name="b">End of finger point</param>
+        /// <param name="c">2nd finger start point</param>
+        /// <param name="limitAngleInf">Minimum angle the points can form</param>
+        /// <param name="limitAngleSup">Maximum angle the points can form</param>
+        /// <param name="palmCenter">Point in center of the hand's palm</param>
+        /// <param name="minDistanceFromPalm">Minimum distance end of finger can be from palm</param>
+        /// <returns>Bool if point cloud represents a finger</returns>
         private bool isFinger(Point a, Point b, Point c, double limitAngleInf, double limitAngleSup, Point palmCenter, double minDistanceFromPalm)
         {
             double angle = findAngle(a, b, c);
@@ -278,6 +309,14 @@ namespace WF_GestureRecognition
             }
             return true;
         }
+        /// <summary>
+        /// Draw a series of points with or without their index
+        /// </summary>
+        /// <param name="image">Image to draw on</param>
+        /// <param name="points">Point vector</param>
+        /// <param name="color">Color to draw</param>
+        /// <param name="withNumbers">Draw point indices or not</param>
+        /// <param name="thickness">Point and font width</param>
         private void drawVectorPoints(Mat image, VectorOfPoint points, MCvScalar color, bool withNumbers, int thickness)
         {
             for (int i = 0; i < points.Size; i++)
@@ -289,6 +328,12 @@ namespace WF_GestureRecognition
                 }
             }
         }
+        /// <summary>
+        /// Find distance between two points on the x axis
+        /// </summary>
+        /// <param name="a">Point a</param>
+        /// <param name="b">Point b</param>
+        /// <returns>Distance between two points on x axis</returns>
         private double findPointsDistanceOnX(Point a, Point b)
         {
             double result = 0D;
@@ -301,6 +346,12 @@ namespace WF_GestureRecognition
             }
             return result;
         }
+        /// <summary>
+        /// Find distance between points
+        /// </summary>
+        /// <param name="a">Point a</param>
+        /// <param name="b">Point b</param>
+        /// <returns>Distance between points</returns>
         private double findPointsDistance(Point a, Point b)
         {
             var xDiff = Math.Abs(a.X - b.X);
@@ -308,6 +359,13 @@ namespace WF_GestureRecognition
 
             return Math.Sqrt(Math.Pow(xDiff, 2) + Math.Pow(yDiff, 2));
         }
+        /// <summary>
+        /// Find angle formed by three points
+        /// </summary>
+        /// <param name="a">Point a</param>
+        /// <param name="b">Point b</param>
+        /// <param name="c">Point c</param>
+        /// <returns></returns>
         private double findAngle(Point a, Point b, Point c)
         {
             double ab = findPointsDistance(a, b);
